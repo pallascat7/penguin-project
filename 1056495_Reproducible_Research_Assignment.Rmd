@@ -1,0 +1,103 @@
+---
+title: "Reproducible Research Assignment"
+author: "1056495"
+date: "2022-12-02"
+output: html_document
+---
+```{r set up}
+setwd(file.choose()) 
+#when i am done with this code, file.choose()
+
+source("Penguin_Libraries.R") #includes all of the papckages that is used for the code.
+source("functions/Plotting.R")
+source("functions/cleaning.R")
+
+
+raw_penguin <- write.csv(penguins_raw, "raw_data/penguins_raw.csv") 
+penguins_Raw <- read.csv("raw_data/penguins_raw.csv", na = c(" ","NA","N/A")) #load the data
+penguins_clean <- cleaning(penguins_Raw)
+write.csv(penguins_clean, "clean_data/penguins_clean.csv")
+```
+
+#Question 01: What is the reproducibility crisis in science, and should we care?
+
+
+#Question 02: Create a figure using the Palmer Penguin dataset that is correct but badly communicates the data. 
+ 
+
+```{r Misleading figure echo=FALSE}
+
+penguins_flippers <- remove_empty_flipper_length(penguins_clean)
+#removed nas of flipper length data
+
+culmen_l_flipper_na <- remove_empty_culmen_length(penguins_flippers)
+
+#dataset now called culmen_l_flipper_na has nas removed of flipper lenghth (penguin_flipper) and culmen length
+
+Misleading_fig <- incorrect_figure(culmen_l_flipper_na)
+Misleading_fig
+
+save_misleading_plot_png(culmen_l_flipper_na, "figures/fig01_report.png", 
+                      size = 15, res = 600, scaling=1)
+
+```
+#Question 03: Discuss how colour choice is important for communication in science figures and what considerations should be made
+ 
+#Question 04: Run a statistical test on the Palmer Penguins dataset and produce a figure to explain it.
+
+##Conducting a statistics test
+the assumptions of a correlations test - x and y is linear 
+2. -> the variable are normally distributed. 
+
+```{r normality test}
+
+hist(culmen_l_flipper_na$culmen_length_mm)
+
+qqnorm(culmen_l_flipper_na$culmen_length_mm)
+qqline(culmen_l_flipper_na$culmen_length_mm)
+
+hist(culmen_l_flipper_na$flipper_length_mm)
+
+qqnorm(culmen_l_flipper_na$flipper_length_mm)
+qqline(culmen_l_flipper_na$flipper_length_mm)
+```
+From both the histograms and the qq plots, one can conclude that the variables culmen length and flipper length aren't normally distributed. This means that we conduct Spearman's Rank Test
+```{r Spearmans's Test}
+cor.test(culmen_l_flipper_na$culmen_length_mm, culmen_l_flipper_na$flipper_length_mm, method = "spearman")
+
+by_Adelie <- filter(culmen_l_flipper_na, species == "Adelie Penguin (Pygoscelis adeliae)")
+by_Chinstrap <- filter(culmen_l_flipper_na, species == "Chinstrap penguin (Pygoscelis antarctica)")
+by_Gentoo <- filter(culmen_l_flipper_na, species == "Gentoo penguin (Pygoscelis papua)")
+
+
+cor.test(by_Adelie$culmen_length_mm, by_Adelie$flipper_length_mm, method = "spearman")
+cor.test(by_Chinstrap$culmen_length_mm, by_Chinstrap$flipper_length_mm, method = "spearman")
+cor.test(by_Gentoo$culmen_length_mm, by_Gentoo$flipper_length_mm, method = "spearman")
+
+
+```
+I have conducted a Spearman's rank test on the overall correlation of culmen length and flipper length which gave the result of a positive correlation of 0.6470508. The interpretation of thsi is that if a penguin has a long culmen length, then it is likely that their flipper length is long. However, the next 3 tests i conducted are split by species. Interestingly, the rho values of each species differ. The correlation value for Adelie penguins (Pygoscelis adeliae) is 0.3391707 - a weak positive correlation. The correlation value for Chinstrap penguins (Pygoscelis antarctica) is 0.5330223 - a positive correlation but a greater value compared to Adelie penguins. The correlation value for Gentoo penguin (Pygoscelis papua) is 0.6470508  - a  stronger positive correlation and a greater value compared to Adelie penguins and Chinstrap penguins
+
+##linear regression 
+```{r linear gression equations }
+culmen_flipper_mod <- lm(flipper_length_mm ~ culmen_length_mm, culmen_l_flipper_na)
+summary(culmen_flipper_mod)
+
+lm(flipper_length_mm ~ culmen_length_mm, by_Adelie)
+lm(flipper_length_mm ~ culmen_length_mm, by_Chinstrap)
+lm(flipper_length_mm ~ culmen_length_mm, by_Gentoo)
+```
+
+```{r}
+plot(culmen_flipper_mod, which=1)
+plot(culmen_flipper_mod, which=2)
+anova(culmen_flipper_mod)
+
+lr_location_plot(culmen_l_flipper_na)
+
+save_location_plot_png(culmen_l_flipper_na, 
+                      "figures/fig02_report.png", 
+                      size = 15, res = 600, scaling=0.8)
+
+```
+
